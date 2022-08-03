@@ -5,7 +5,7 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, jsonify, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -42,8 +42,10 @@ class Venue(db.Model):
     facebook_link = db.Column(db.String(120))
     genres = db.Column(db.String(120))
     website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean)
+    seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String)
+
+    shows = db.relationship('Show', backref='venue', lazy=True)
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -59,12 +61,22 @@ class Artist(db.Model):
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
     website = db.Column(db.String(120))
-    seeking_venue = db.Column(db.Boolean)
+    seeking_venue = db.Column(db.Boolean, nullable=False, default=False)
     seeking_description = db.Column(db.String)
+    
+    shows = db.relationship('Show', backref='artist', lazy=True)
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+class Show(db.Model):
+  __tablename__ = 'shows'
+
+  id = db.Column(db.Integer, primary_key=True)
+
+  artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
+  venue_id = db.Column(db.Integer, db.ForeignKey('venues.id'), nullable=False)
+  start_time = db.Column(db.DateTime)
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -229,6 +241,16 @@ def create_venue_form():
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
   form = request.form
+  seeking_talent_val = False
+  if 'seeking_talent' in form:
+    if form['seeking_talent'] == 'y':
+      seeking_talent_val = True
+    else:
+      seeking_talent_val = False
+
+  genre_list = json.dumps(form.getlist('genres'))
+  # return jsonify(json.loads(a))
+
   venue_object = Venue(
     name=form['name'],
     city=form['city'],
@@ -237,7 +259,12 @@ def create_venue_submission():
     phone=form['phone'],
     image_link=form['image_link'],
     facebook_link=form['facebook_link'],
+    genres=genre_list,
+    website=form['website_link'],
+    seeking_talent=seeking_talent_val,
+    seeking_description=form['seeking_description']
   )
+  
   db.session.add(venue_object)
   db.session.commit()
   # TODO: insert form data as a new Venue record in the db, instead
@@ -435,14 +462,26 @@ def create_artist_form():
 def create_artist_submission():
   # called upon submitting the new artist listing form
   form = request.form
+  seeking_venue_val = False
+  if 'seeking_venue' in form:
+    if form['seeking_venue'] == 'y':
+      seeking_venue_val = True
+    else:
+      seeking_venue_val = False
+
+  genre_list = json.dumps(form.getlist('genres'))
+
   artist_object = Artist(
     name=form['name'],
     city=form['city'],
     state=form['state'],
     phone=form['phone'],
-    genres=form['genres'],
+    genres=genre_list,
     image_link=form['image_link'],
     facebook_link=form['facebook_link'],
+    website=form['website_link'],
+    seeking_venue=seeking_venue_val,
+    seeking_description=form['seeking_description']
   )
   db.session.add(artist_object)
   db.session.commit()
