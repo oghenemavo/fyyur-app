@@ -221,6 +221,18 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
+  form = request.form
+  venue_object = Venue(
+    name=form['name'],
+    city=form['city'],
+    state=form['state'],
+    address=form['address'],
+    phone=form['phone'],
+    image_link=form['image_link'],
+    facebook_link=form['facebook_link'],
+  )
+  db.session.add(venue_object)
+  db.session.commit()
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
 
@@ -415,6 +427,18 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
   # called upon submitting the new artist listing form
+  form = request.form
+  artist_object = Artist(
+    name=form['name'],
+    city=form['city'],
+    state=form['state'],
+    phone=form['phone'],
+    genres=form['genres'],
+    image_link=form['image_link'],
+    facebook_link=form['facebook_link'],
+  )
+  db.session.add(artist_object)
+  db.session.commit()
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
 
