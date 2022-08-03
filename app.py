@@ -76,7 +76,7 @@ class Show(db.Model):
 
   artist_id = db.Column(db.Integer, db.ForeignKey('artists.id'), nullable=False)
   venue_id = db.Column(db.Integer, db.ForeignKey('venues.id'), nullable=False)
-  start_time = db.Column(db.DateTime)
+  start_time = db.Column(db.String(120))
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -108,27 +108,33 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "city": "San Francisco",
-    "state": "CA",
-    "venues": [{
-      "id": 1,
-      "name": "The Musical Hop",
-      "num_upcoming_shows": 0,
-    }, {
-      "id": 3,
-      "name": "Park Square Live Music & Coffee",
-      "num_upcoming_shows": 1,
-    }]
-  }, {
-    "city": "New York",
-    "state": "NY",
-    "venues": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }]
+  data=[
+    {
+      "city": "San Francisco",
+      "state": "CA",
+      "venues": [
+        {
+        "id": 1,
+        "name": "The Musical Hop",
+        "num_upcoming_shows": 0,
+        }, 
+        {
+          "id": 3,
+          "name": "Park Square Live Music & Coffee",
+          "num_upcoming_shows": 1,
+        }
+      ]
+    }, 
+    {
+      "city": "New York",
+      "state": "NY",
+      "venues": [{
+        "id": 2,
+        "name": "The Dueling Pianos Bar",
+        "num_upcoming_shows": 0,
+      }]
+    }
+  ]
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
@@ -500,6 +506,24 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
+  result = db.engine.execute(
+    '''
+      SELECT venue_id, v.name as venue_name, artist_id, a.name as artist_name,
+      a.image_link as artist_image_link, start_time
+      FROM shows
+      JOIN venues as v 
+      ON v.id = shows.venue_id
+      JOIN artists as a 
+      ON a.id = shows.artist_id;
+    '''
+  )
+
+  show_list = [dict(row) for row in result]
+
+  # return jsonify()
+
+
+
   # displays list of shows at /shows
   # TODO: replace with real venues data.
   data=[{
@@ -538,7 +562,7 @@ def shows():
     "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
     "start_time": "2035-04-15T20:00:00.000Z"
   }]
-  return render_template('pages/shows.html', shows=data)
+  return render_template('pages/shows.html', shows=show_list)
 
 @app.route('/shows/create')
 def create_shows():
@@ -548,6 +572,14 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
+  form = request.form
+  show = Show(
+    venue_id=form['venue_id'],
+    artist_id=form['artist_id'],
+    start_time=form['start_time'],
+  )
+  db.session.add(show)
+  db.session.commit()
   # called to create new shows in the db, upon submitting new show listing form
   # TODO: insert form data as a new Show record in the db, instead
 
