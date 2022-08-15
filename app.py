@@ -3,15 +3,18 @@
 #----------------------------------------------------------------------------#
 
 import json
+import pickle
 import dateutil.parser
 import babel
 from flask import Flask, jsonify, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy, get_debug_queries
+from sqlalchemy.orm import load_only
 from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
+from sqlalchemy import column, select
 from forms import *
 #----------------------------------------------------------------------------#
 # App Config.
@@ -30,22 +33,25 @@ migrate = Migrate(app, db)
 #----------------------------------------------------------------------------#
 
 class Venue(db.Model):
-    __tablename__ = 'venues'
+  __tablename__ = 'venues'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    website = db.Column(db.String(120))
-    seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
-    seeking_description = db.Column(db.String)
+  id = db.Column(db.Integer, primary_key=True)
+  name = db.Column(db.String)
+  city = db.Column(db.String(120))
+  state = db.Column(db.String(120))
+  address = db.Column(db.String(120))
+  phone = db.Column(db.String(120))
+  image_link = db.Column(db.String(500))
+  facebook_link = db.Column(db.String(120))
+  genres = db.Column(db.String(120))
+  website = db.Column(db.String(120))
+  seeking_talent = db.Column(db.Boolean, nullable=False, default=False)
+  seeking_description = db.Column(db.String)
 
-    shows = db.relationship('Show', backref='venue', lazy=True)
+  shows = db.relationship('Show', backref='venue', lazy=True)
+
+  def __repr__(self):
+    return f'{self.id} {self.name} {self.city} {self.state} {self.address}'
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -135,6 +141,28 @@ def venues():
       }]
     }
   ]
+
+  # areaList = []
+  # areaDict = {}
+
+  # venues = Venue.query.group_by(Venue.city, Venue.state).all()
+
+  # venues = db.session.query(Venue).group_by(Venue.city, Venue.state, Venue.id).all()
+
+  # print(dir(venues[0]))
+
+  # for val in venues:
+  #   if (areaDict['city'] == val.city and areaDict['state'] == val.state):
+  #     areaDict['venues'] = val.city
+  #     areaDict['state'] == val.state
+  #   else:
+  #     areaDict['city'] = val.city
+  #     areaDict['state'] = val.state
+
+  #   areaList.append(areaDict)
+  
+  # return json.dumps(areaList)
+
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
@@ -297,16 +325,7 @@ def delete_venue(venue_id):
 @app.route('/artists')
 def artists():
   # TODO: replace with real data returned from querying the database
-  data=[{
-    "id": 4,
-    "name": "Guns N Petals",
-  }, {
-    "id": 5,
-    "name": "Matt Quevedo",
-  }, {
-    "id": 6,
-    "name": "The Wild Sax Band",
-  }]
+  data = db.session.query(Artist.id, Artist.name).all()
   return render_template('pages/artists.html', artists=data)
 
 @app.route('/artists/search', methods=['POST'])
@@ -328,6 +347,8 @@ def search_artists():
 def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO: replace with real artist data from the artist table, using artist_id
+  artist = db.session.query(Artist).filter_by(id=artist_id).first()
+  return print(artist)
   data1={
     "id": 4,
     "name": "Guns N Petals",
@@ -520,48 +541,8 @@ def shows():
 
   show_list = [dict(row) for row in result]
 
-  # return jsonify()
-
-
-
   # displays list of shows at /shows
   # TODO: replace with real venues data.
-  data=[{
-    "venue_id": 1,
-    "venue_name": "The Musical Hop",
-    "artist_id": 4,
-    "artist_name": "Guns N Petals",
-    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "start_time": "2019-05-21T21:30:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 5,
-    "artist_name": "Matt Quevedo",
-    "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-    "start_time": "2019-06-15T23:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-01T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-08T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-15T20:00:00.000Z"
-  }]
   return render_template('pages/shows.html', shows=show_list)
 
 @app.route('/shows/create')
