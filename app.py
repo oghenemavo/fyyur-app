@@ -418,8 +418,10 @@ def show_artist(artist_id):
 #  ----------------------------------------------------------------
 @app.route('/artists/<int:artist_id>/edit', methods=['GET'])
 def edit_artist(artist_id):
+  artist = Artist.query.get(artist_id)
+  
   form = ArtistForm()
-  artist={
+  artistss={
     "id": 4,
     "name": "Guns N Petals",
     "genres": ["Rock n Roll"],
@@ -439,6 +441,28 @@ def edit_artist(artist_id):
 def edit_artist_submission(artist_id):
   # TODO: take values from the form submitted, and update existing
   # artist record with ID <artist_id> using the new attributes
+  artist = Artist.query.get(artist_id)
+  form = request.form
+  seeking_venue_val = False
+  if 'seeking_venue' in form:
+    if form['seeking_venue'] == 'y':
+      seeking_venue_val = True
+    else:
+      seeking_venue_val = False
+
+  genre_list = json.dumps(form.getlist('genres'))
+
+  artist.name=form['name']
+  artist.city=form['city']
+  artist.state=form['state']
+  artist.phone=form['phone']
+  artist.genres=genre_list
+  artist.image_link=form['image_link']
+  artist.facebook_link=form['facebook_link']
+  artist.website=form['website_link']
+  artist.seeking_venue=seeking_venue_val
+  artist.seeking_description=form['seeking_description']
+  db.session.commit()
 
   return redirect(url_for('show_artist', artist_id=artist_id))
 
