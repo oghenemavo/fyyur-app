@@ -147,14 +147,20 @@ def search_venues():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
-  response={
-    "count": 1,
-    "data": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
-  }
+
+  search = request.form['search_term']
+
+  venueSearchObject = db.session.query(Venue).with_entities(
+    Venue.id, Venue.name, func.count(Venue.id), func.count(Show.id)
+  ).filter(Artist.name.like('%' + search + '%')).join(
+    Show, Show.venue_id == Venue.id
+  ).group_by(Venue.id).all()
+
+  response = {}
+  response['data'] = []
+  for id, name, artist_count, show_count in venueSearchObject:
+    response['count'] = artist_count
+    response['data'].append({"id": id, "name": name, "num_upcoming_shows": show_count})
   return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/venues/<int:venue_id>')
@@ -325,8 +331,6 @@ def search_artists():
   for id, name, artist_count, show_count in artistSearchObject:
     response['count'] = artist_count
     response['data'].append({"id": id, "name": name, "num_upcoming_shows": show_count})
-
-  print(response)
 
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
