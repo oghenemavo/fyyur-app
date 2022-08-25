@@ -4,6 +4,7 @@
 
 import json
 import pickle
+import re
 import dateutil.parser
 import babel
 from flask import Flask, jsonify, render_template, request, Response, flash, redirect, url_for
@@ -16,6 +17,7 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from sqlalchemy import column, select
 from forms import *
+from sqlalchemy import func
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -114,54 +116,28 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  data=[
-    {
-      "city": "San Francisco",
-      "state": "CA",
-      "venues": [
-        {
-        "id": 1,
-        "name": "The Musical Hop",
-        "num_upcoming_shows": 0,
-        }, 
-        {
-          "id": 3,
-          "name": "Park Square Live Music & Coffee",
-          "num_upcoming_shows": 1,
-        }
-      ]
-    }, 
-    {
-      "city": "New York",
-      "state": "NY",
-      "venues": [{
-        "id": 2,
-        "name": "The Dueling Pianos Bar",
-        "num_upcoming_shows": 0,
-      }]
-    }
-  ]
+  venuesObject = db.session.query(Venue).with_entities(Venue.city, Venue.state, Venue.name, Venue.id, func.count(Venue.id)).group_by(Venue.city, Venue.state, Venue.name, Venue.id)
+  
+  results = {}
+  for city, state, name, id, show_count in venuesObject:
+    location = (city, state)
+    if location not in results:
+      results[location] = []
+    results[location].append({"id": id, "name": name, "num_upcoming_shows": show_count})
 
-  # areaList = []
-  # areaDict = {}
+  data = [];
+  for key, value in results.items():
+    locationVenues = {
+      'city': key[0],
+      'state': key[1],
+      'venues': value,
+    }
+    data.append(locationVenues)
 
   # venues = Venue.query.group_by(Venue.city, Venue.state).all()
-
   # venues = db.session.query(Venue).group_by(Venue.city, Venue.state, Venue.id).all()
-
   # print(dir(venues[0]))
-
-  # for val in venues:
-  #   if (areaDict['city'] == val.city and areaDict['state'] == val.state):
-  #     areaDict['venues'] = val.city
-  #     areaDict['state'] == val.state
-  #   else:
-  #     areaDict['city'] = val.city
-  #     areaDict['state'] = val.state
-
-  #   areaList.append(areaDict)
-  
-  # return json.dumps(areaList)
+  # json.dumps(areaList)
 
   return render_template('pages/venues.html', areas=data);
 
