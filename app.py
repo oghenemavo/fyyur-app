@@ -4,6 +4,7 @@
 
 import json
 import pickle
+import pprint
 import re
 import dateutil.parser
 import babel
@@ -503,17 +504,13 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-  result = db.engine.execute(
-    '''
-      SELECT venue_id, v.name as venue_name, artist_id, a.name as artist_name,
-      a.image_link as artist_image_link, start_time
-      FROM shows
-      JOIN venues as v 
-      ON v.id = shows.venue_id
-      JOIN artists as a 
-      ON a.id = shows.artist_id;
-    '''
-  )
+  result = db.session.query(Show).with_entities(Show.venue_id, Show.artist_id, Show.start_time, 
+    Venue.name.label("venue_name"), 
+    Artist.name.label("artist_name"), Artist.image_link.label("artist_image_link")
+  ).join(Venue, Venue.id == Show.venue_id).join(Artist, Artist.id == Show.artist_id).all()
+
+  # for record in result:
+    # pprint.pprint(record.__dict__)
 
   show_list = [dict(row) for row in result]
 
