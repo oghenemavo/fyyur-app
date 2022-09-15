@@ -245,7 +245,43 @@ def show_venue(venue_id):
     "upcoming_shows_count": 1,
   }
   data = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
-  return render_template('pages/show_venue.html', venue=data)
+  
+  venue = db.session.query(Venue).filter_by(id=venue_id).first()
+  past_shows = db.session.query(Show).with_entities( 
+    Artist.id.label("artist_id"), Artist.name.label("artist_name"), Artist.image_link.label("artist_image_link"),
+    Show.start_time, func.count(Show.id).label("show_count")
+  ).join(
+    Artist, Artist.id == Show.artist_id
+  ).filter(Show.venue_id == venue_id).group_by(Artist.id, Show.start_time).all()
+  upcoming_shows = db.session.query(Show).with_entities( 
+    Artist.id.label("artist_id"), Artist.name.label("artist_name"), Artist.image_link.label("artist_image_link"),
+    Show.start_time, func.count(Show.id).label("show_count")
+  ).join(
+    Artist, Artist.id == Show.artist_id
+  ).filter(Show.venue_id == venue_id).group_by(Artist.id, Show.start_time).all()
+
+  results = {}
+  results["past_shows_count"] = past_shows[0].show_count
+  results["upcoming_shows_count"] = upcoming_shows[0].show_count
+  results["past_shows"] = results["upcoming_shows"] = []
+
+  for attr, value in venue.__dict__.items():
+    if (attr == 'genres'):
+      results[attr] = json.loads(value)
+    else:
+      results[attr] = value
+
+  for x in past_shows:
+    results["past_shows"].append({"artist_id": x.artist_id, "artist_name": x.artist_name, "artist_image_link": x.artist_image_link, "start_time": x.start_time})
+
+  for x in upcoming_shows:
+    results["upcoming_shows"].append({"artist_id": x.artist_id, "artist_name": x.artist_name, "artist_image_link": x.artist_image_link, "start_time": x.start_time})
+    
+  # for x in json.loads(results['genres']):
+  #   print(x)
+  # print(results['genres'])
+  
+  return render_template('pages/show_venue.html', venue=results)
 
 #  Create Venue
 #  ----------------------------------------------------------------
