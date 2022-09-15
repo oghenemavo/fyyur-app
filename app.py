@@ -276,10 +276,6 @@ def show_venue(venue_id):
 
   for x in upcoming_shows:
     results["upcoming_shows"].append({"artist_id": x.artist_id, "artist_name": x.artist_name, "artist_image_link": x.artist_image_link, "start_time": x.start_time})
-    
-  # for x in json.loads(results['genres']):
-  #   print(x)
-  # print(results['genres'])
   
   return render_template('pages/show_venue.html', venue=results)
 
@@ -379,7 +375,8 @@ def show_artist(artist_id):
   # shows the artist page with the given artist_id
   # TODO: replace with real artist data from the artist table, using artist_id
   artist = db.session.query(Artist).filter_by(id=artist_id).first()
-  return print(artist)
+  print(artist)
+
   data1={
     "id": 4,
     "name": "Guns N Petals",
@@ -452,7 +449,40 @@ def show_artist(artist_id):
     "upcoming_shows_count": 3,
   }
   data = list(filter(lambda d: d['id'] == artist_id, [data1, data2, data3]))[0]
-  return render_template('pages/show_artist.html', artist=data)
+
+
+  artist = db.session.query(Artist).filter_by(id=artist_id).first()
+  past_shows = db.session.query(Show).with_entities( 
+    Venue.id.label("venue_id"), Venue.name.label("venue_name"), Venue.image_link.label("venue_image_link"),
+    Show.start_time, func.count(Show.id).label("show_count")
+  ).join(
+    Venue, Venue.id == Show.venue_id
+  ).filter(Show.venue_id == artist_id).group_by(Venue.id, Show.start_time).all()
+  upcoming_shows = db.session.query(Show).with_entities( 
+    Venue.id.label("venue_id"), Venue.name.label("venue_name"), Venue.image_link.label("venue_image_link"),
+    Show.start_time, func.count(Show.id).label("show_count")
+  ).join(
+    Venue, Venue.id == Show.venue_id
+  ).filter(Show.venue_id == artist_id).group_by(Venue.id, Show.start_time).all()
+
+  results = {}
+  results["past_shows_count"] = past_shows[0].show_count
+  results["upcoming_shows_count"] = upcoming_shows[0].show_count
+  results["past_shows"] = results["upcoming_shows"] = []
+
+  for attr, value in artist.__dict__.items():
+    if (attr == 'genres'):
+      results[attr] = json.loads(value)
+    else:
+      results[attr] = value
+
+  for x in past_shows:
+    results["past_shows"].append({"venue_id": x.venue_id, "venue_name": x.venue_name, "venue_image_link": x.venue_image_link, "start_time": x.start_time})
+
+  for x in upcoming_shows:
+    results["upcoming_shows"].append({"venue_id": x.venue_id, "venue_name": x.venue_name, "venue_image_link": x.venue_image_link, "start_time": x.start_time})
+  
+  return render_template('pages/show_artist.html', artist=results)
 
 #  Update
 #  ----------------------------------------------------------------
