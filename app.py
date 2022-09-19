@@ -306,7 +306,7 @@ def edit_artist(artist_id):
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-  form = ArtistForm(request.form)
+  form = ArtistForm(request.form, meta={"csrf": False})
 
   if form.validate():
     try:
@@ -348,7 +348,7 @@ def edit_venue(venue_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
-  form = VenueForm(request.form)
+  form = VenueForm(request.form, meta={"csrf": False})
 
   if form.validate():
     try:
@@ -390,7 +390,7 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
-  form = ArtistForm(request.form)
+  form = ArtistForm(request.form, meta={"csrf": False})
 
   if form.validate():
     try:
@@ -452,7 +452,7 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-  form = ShowForm(request.form)
+  form = ShowForm(request.form, meta={"csrf": False})
 
   if form.validate():
     try:
