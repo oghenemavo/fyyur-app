@@ -550,8 +550,8 @@ def shows():
 
 @app.route('/shows/create')
 def create_shows():
-  artist_list = Artist.query.with_entities(Artist.id, Artist.name).all()
-  venue_list = Venue.query.with_entities(Venue.id, Venue.name).all()
+  artist_list = db.session.query(Artist).with_entities(Artist.id, Artist.name).all()
+  venue_list = db.session.query(Venue).with_entities(Venue.id, Venue.name).all()
   # renders form. do not touch.
   form = ShowForm()
   return render_template('forms/new_show.html', form=form, artists=artist_list, venues=venue_list)
@@ -559,6 +559,7 @@ def create_shows():
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
   try:
+    print(request.form)
     form = ShowForm(request.form)
     show = Show(
       venue_id=form.venue_id.data,
